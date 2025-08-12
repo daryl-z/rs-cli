@@ -17,7 +17,7 @@ pub fn process_genpass(opts: &GenPassOpts) -> anyhow::Result<()> {
         (opts.numbers, NUMBERS),
         (opts.symbols, SYMBOLS),
     ];
-    let enabled_sets: Vec<_> = char_sets
+    let enabled_sets: Vec<&[u8]> = char_sets
         .into_iter() // 使用 into_iter 消费数组
         .filter(|(enabled, _)| *enabled)
         .map(|(_, set)| set)
