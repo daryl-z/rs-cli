@@ -1,5 +1,6 @@
 mod opts;
 mod process;
 
+pub use crate::process::csv_convert::process_csv;
+pub use crate::process::gen_pass::process_genpass;
 pub use opts::{CsvOpts, Opts, OutputFormat, SubCommand};
-pub use process::{process_csv, process_genpass};

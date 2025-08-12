@@ -50,7 +50,7 @@ pub fn process_genpass(opts: &GenPassOpts) -> anyhow::Result<()> {
     let final_password = String::from_utf8(password)?;
     println!("{}", final_password);
     let score = zxcvbn(&final_password, &[]).score();
-    eprintln!("密码强度评分：{} / 5", score);
+    eprintln!("密码强度评分：{}/5", score);
 
     Ok(())
 }

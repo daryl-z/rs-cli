@@ -5,7 +5,7 @@ use std::str::FromStr;
 
 #[derive(Debug, Parser)]
 #[clap(
-    name = "rcli",
+    name = "rst",
     version ,
     author,
     about ,
@@ -120,7 +120,6 @@ mod tests {
             "--header",
         ]);
         assert_eq!(opts.input, tmp.path().to_str().unwrap());
-        // assert_eq!(opts.output, "output.json");
         assert_eq!(opts.delimiter, ';');
         assert!(opts.header);
     }
