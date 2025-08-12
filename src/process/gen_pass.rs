@@ -10,46 +10,42 @@ const SYMBOLS: &[u8] = b"!@#$%^&*().<>?_+-=/";
 pub fn process_genpass(opts: &GenPassOpts) -> anyhow::Result<()> {
     let mut rng = rand::rng();
 
-    // 1. 声明式地定义所有可能的字符集及其启用条件
     let char_sets = [
         (opts.lowercase, LOWERCASE),
         (opts.uppercase, UPPERCASE),
         (opts.numbers, NUMBERS),
         (opts.symbols, SYMBOLS),
     ];
-
-    // 2. 使用迭代器链构建基础密码和完整字符池
-    let mut password: Vec<u8> = Vec::new();
-    let mut charset: Vec<u8> = Vec::new();
-
-    char_sets
-        .iter()
+    let enabled_sets: Vec<_> = char_sets
+        .into_iter() // 使用 into_iter 消费数组
         .filter(|(enabled, _)| *enabled)
-        .for_each(|(_, set)| {
-            // a. 确保每种启用的字符集都至少有一个字符进入密码
-            password.push(*set.choose(&mut rng).unwrap());
-            // b. 将该字符集添加到总的字符池中
-            charset.extend_from_slice(set);
-        });
+        .map(|(_, set)| set)
+        .collect();
 
-    // 如果没有选择任何字符集，则提前返回
-    if charset.is_empty() {
+    // 3. 在所有操作开始前，首先处理边界情况
+    if enabled_sets.is_empty() {
         eprintln!("错误：请至少选择一个字符集！");
         return Ok(());
     }
 
-    // 3. 使用函数式方法生成剩余的填充字符
-    // 一个有“地板”的减法。结果最小只能到达地板（0），不能再低了
+    // 4. 函数式地生成“保证存在的字符”
+    let mut password: Vec<u8> = enabled_sets
+        .iter()
+        .map(|set| *set.choose(&mut rng).unwrap())
+        .collect();
+
+    let charset: Vec<u8> = enabled_sets.iter().flat_map(|set| *set).cloned().collect();
+
     let remaining_len = opts.length.saturating_sub(password.len());
 
-    let filler_chars = iter::repeat_with(|| *charset.choose(&mut rng).unwrap()).take(remaining_len);
+    // 使用 chain 将保证字符和填充字符的迭代器连接起来，逻辑更连贯
+    if remaining_len > 0 {
+        let filler_chars =
+            iter::repeat_with(|| *charset.choose(&mut rng).unwrap()).take(remaining_len);
+        password.extend(filler_chars);
+    }
 
-    // 4. 将填充字符追加到密码中
-    password.extend(filler_chars);
-
-    // 5. 打乱最终密码
     password.shuffle(&mut rng);
-
     let final_password = String::from_utf8(password)?;
     println!("{}", final_password);
 
