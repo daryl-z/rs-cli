@@ -5,7 +5,7 @@ use crate::OutputFormat;
 use serde_json::Value;
 use std::fs::write;
 
-// #[derive(Debug, Serialize, Deseri alize)]
+// #[derive(Debug, Serialize, Deserialize)]
 // #[serde(rename_all = "PascalCase")]
 // struct Player {
 //     #[serde(rename = "Name")]
@@ -49,7 +49,35 @@ pub fn process_csv(input: &str, output: String, format: OutputFormat) -> Result<
     let content = match format {
         OutputFormat::Json => serde_json::to_string_pretty(&rows)?,
         OutputFormat::Yaml => serde_yaml::to_string(&rows)?,
-        // OutputFormat::Toml => toml::to_string(&rows)?,
+        OutputFormat::Toml => {
+            // TOML doesn't support root-level arrays, so we have options:
+
+            // Option 1: Array of tables format [[data]] (current)
+            // let wrapper = serde_json::json!({"data": rows});
+            // toml::to_string_pretty(&wrapper)?
+
+            // Option 2: Individual numbered tables [record_0], [record_1], etc.
+            // let mut toml_content = String::new();
+            // for (index, row) in rows.iter().enumerate() {
+            //     toml_content.push_str(&format!("[record_{}]\n", index));
+            //     if let Value::Object(map) = row {
+            //         for (key, value) in map {
+            //             if let Value::String(val) = value {
+            //                 toml_content.push_str(&format!("{} = \"{}\"\n", key, val));
+            //             }
+            //         }
+            //     }
+            //     toml_content.push('\n');
+            // }
+            // toml_content
+
+            // Option 3: Single table with array values (uncomment to use)
+            let mut table = serde_json::Map::new();
+            for (i, row) in rows.iter().enumerate() {
+                table.insert(format!("{}", i), row.clone());
+            }
+            toml::to_string_pretty(&Value::Object(table))?
+        }
     };
 
     let _ = write(output, content);
