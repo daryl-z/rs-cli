@@ -3,27 +3,6 @@ use std::fmt;
 use std::path::Path;
 use std::str::FromStr;
 
-#[derive(Debug, Parser)]
-#[clap(
-    name = "rst",
-    version ,
-    author,
-    about ,
-    long_about = None
-)]
-pub struct Opts {
-    #[command(subcommand)]
-    pub cmd: SubCommand,
-}
-
-#[derive(Debug, Parser)]
-pub enum SubCommand {
-    #[command(name = "csv", about = "Convert CSV to other formats")]
-    Csv(CsvOpts),
-    #[command(name = "genpass", about = "Generate a random password")]
-    GenPass(GenPassOpts),
-}
-
 #[derive(Debug, Clone, Copy)]
 pub enum OutputFormat {
     Json,
@@ -45,20 +24,6 @@ pub struct CsvOpts {
     pub header: bool,
 }
 
-#[derive(Debug, Parser)]
-pub struct GenPassOpts {
-    #[arg(short, long, default_value_t = 12)]
-    pub length: usize,
-    #[arg(long, default_value_t = true, action = clap::ArgAction::Set, value_parser = clap::value_parser!(bool))]
-    pub uppercase: bool,
-    #[arg(long, default_value_t = true, action = clap::ArgAction::Set, value_parser = clap::value_parser!(bool))]
-    pub lowercase: bool,
-    #[arg(long, default_value_t = true, action = clap::ArgAction::Set, value_parser = clap::value_parser!(bool))]
-    pub numbers: bool,
-    #[arg(long, default_value_t = true, action = clap::ArgAction::Set, value_parser = clap::value_parser!(bool))]
-    pub symbols: bool,
-}
-
 fn verify_input_file(file: &str) -> Result<String, String> {
     if Path::new(file).exists() {
         Ok(file.to_string())
@@ -71,7 +36,7 @@ fn parse_format(fmt: &str) -> Result<OutputFormat, anyhow::Error> {
     fmt.parse()
 }
 
-impl From<OutputFormat> for &'static str {
+impl From<OutputFormat> for &str {
     fn from(format: OutputFormat) -> Self {
         match format {
             OutputFormat::Json => "json",
