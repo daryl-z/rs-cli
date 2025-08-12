@@ -48,7 +48,7 @@ pub struct CsvOpts {
 #[derive(Debug, Parser)]
 pub struct GenPassOpts {
     #[arg(short, long, default_value_t = 12)]
-    pub length: u8,
+    pub length: usize,
     #[arg(long, default_value_t = true)]
     pub uppercase: bool,
     #[arg(long, default_value_t = true)]
