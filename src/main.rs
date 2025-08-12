@@ -28,7 +28,7 @@ fn main() -> anyhow::Result<()> {
             process_csv(&opts.input, output, opts.format)?;
         }
         SubCommand::GenPass(opts) => {
-            println!("Generating password...{:?}", opts);
+            eprintln!("Generating password...{:?}", opts);
             process_genpass(&opts)?;
         }
     }
