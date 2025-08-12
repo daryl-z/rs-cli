@@ -1,5 +1,6 @@
 use clap::Parser;
-use rs_cli::{process_csv, process_genpass, Opts, SubCommand};
+pub use rs_cli::Base64SubCommand;
+use rs_cli::{process_csv, process_decode, process_encode, process_genpass, Opts, SubCommand};
 
 fn main() -> anyhow::Result<()> {
     let opts: Opts = Opts::parse();
@@ -15,6 +16,14 @@ fn main() -> anyhow::Result<()> {
         SubCommand::GenPass(opts) => {
             process_genpass(&opts)?;
         }
+        SubCommand::Base64(subcmd) => match subcmd {
+            Base64SubCommand::Encode(opts) => {
+                process_encode(&opts)?;
+            }
+            Base64SubCommand::Decode(opts) => {
+                process_decode(&opts)?;
+            }
+        },
     }
     Ok(())
 }
