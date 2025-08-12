@@ -30,7 +30,6 @@ fn main() -> anyhow::Result<()> {
         SubCommand::GenPass(opts) => {
             println!("Generating password...{:?}", opts);
             process_genpass(&opts)?;
-            // Implement password generation logic here
         }
     }
     Ok(())

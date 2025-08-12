@@ -1,6 +1,7 @@
 use crate::opts::GenPassOpts;
 use rand::seq::{IndexedRandom, SliceRandom};
 use std::iter;
+use zxcvbn::zxcvbn;
 
 const LOWERCASE: &[u8] = b"abcdefghijklmnopqrstuvwxyz";
 const UPPERCASE: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -48,6 +49,8 @@ pub fn process_genpass(opts: &GenPassOpts) -> anyhow::Result<()> {
     password.shuffle(&mut rng);
     let final_password = String::from_utf8(password)?;
     println!("{}", final_password);
+    let score = zxcvbn(&final_password, &[]).score();
+    println!("密码强度评分：{} / 5", score);
 
     Ok(())
 }
