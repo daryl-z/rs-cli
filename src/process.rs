@@ -49,7 +49,7 @@ pub fn process_csv(input: &str, output: String, format: OutputFormat) -> Result<
     let content = match format {
         OutputFormat::Json => serde_json::to_string_pretty(&rows)?,
         OutputFormat::Yaml => serde_yaml::to_string(&rows)?,
-        OutputFormat::Toml => toml::to_string(&rows)?,
+        // OutputFormat::Toml => toml::to_string(&rows)?,
     };
 
     let _ = write(output, content);
