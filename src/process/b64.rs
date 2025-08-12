@@ -95,15 +95,10 @@ pub fn process_decode(opts: &Base64DecodeOpts) -> anyhow::Result<()> {
             }
             Ok(_) => {
                 let trimmed = line.trim();
-                if trimmed.is_empty() {
-                    eprintln!("错误：输入为空，请输入有效的Base64内容");
-                    return Ok(());
-                }
                 trimmed.to_string()
             }
             Err(e) => {
                 eprintln!("从标准输入读取数据时出错：{}", e);
-                eprintln!("请检查输入或尝试使用文件输入：-i filename");
                 return Ok(());
             }
         }
@@ -112,10 +107,6 @@ pub fn process_decode(opts: &Base64DecodeOpts) -> anyhow::Result<()> {
             Ok(file) => file,
             Err(e) => {
                 eprintln!("无法打开文件 '{}'：{}", opts.input, e);
-                eprintln!("请检查：");
-                eprintln!("1. 文件是否存在");
-                eprintln!("2. 是否有读取权限");
-                eprintln!("3. 路径是否正确");
                 return Ok(());
             }
         };
@@ -150,15 +141,7 @@ pub fn process_decode(opts: &Base64DecodeOpts) -> anyhow::Result<()> {
     let decoded = match decoded {
         Ok(data) => data,
         Err(e) => {
-            eprintln!("Base64解码失败：");
-            eprintln!("输入内容：{}", input_str);
-            eprintln!("错误详情：{}", e);
-            eprintln!("\n");
-            eprintln!("提示：");
-            eprintln!("1. 请确保输入是有效的Base64编码");
-            eprintln!("2. Base64只能包含字母(a-z, A-Z)、数字(0-9)、加号(+)、斜杠(/)和等号(=)");
-            eprintln!("3. 如果是URL-safe格式，请使用 --format urlsafe 参数");
-            eprintln!("4. 示例有效输入：aGVsbG8gd29ybGQ=");
+            eprintln!("Base64解码失败：输入内容：{}\n错误详情：{}", input_str, e);
             return Ok(());
         }
     };
@@ -166,30 +149,14 @@ pub fn process_decode(opts: &Base64DecodeOpts) -> anyhow::Result<()> {
     // 智能处理解码后的数据
     match String::from_utf8(decoded.clone()) {
         std::result::Result::Ok(text) => {
-            // 如果是有效的UTF-8文本，直接输出
             println!("{}", text);
         }
-        Err(_) => {
-            // 如果不是有效的UTF-8，检查是否应该输出为二进制文件
-            if decoded
-                .iter()
-                .any(|&b| b < 32 && b != b'\n' && b != b'\r' && b != b'\t')
-            {
-                // 包含控制字符，很可能是二进制数据
-                eprintln!("警告：解码后的数据包含二进制内容，无法以文本形式显示");
-                eprintln!("数据长度：{} 字节", decoded.len());
-                eprintln!(
-                    "十六进制预览（前64字节）：{}",
-                    hex::encode(&decoded[..decoded.len().min(64)])
-                );
-
-                // 建议保存到文件
-                eprintln!("建议将输出重定向到文件，例如：");
-                eprintln!("  rcli base64 decode -i {} > output.bin", opts.input);
-            } else {
-                // 可能只是编码问题，尝试显示为十六进制
-                println!("解码结果（十六进制）：{}", hex::encode(&decoded));
-            }
+        Err(e) => {
+            eprintln!(
+                "Base64解码后的数据不是有效的UTF-8文本，无法输出为文本。错误详情：{}",
+                e
+            );
+            return Ok(());
         }
     }
     Ok(())
