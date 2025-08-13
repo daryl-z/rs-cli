@@ -1,7 +1,6 @@
 use super::verify_input_file;
 use clap::Parser;
-use std::fmt;
-use std::str::FromStr;
+use std::{fmt, str::FromStr};
 
 #[derive(Debug, Clone, Copy)]
 pub enum OutputFormat {

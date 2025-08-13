@@ -1,14 +1,16 @@
 mod base64;
 mod csv;
 mod genpass;
+mod text;
 
 use std::path::Path;
 
-pub use self::{
-    base64::Base64DecodeOpts, base64::Base64EncodeOpts, base64::Base64Format,
-    base64::Base64SubCommand, csv::CsvOpts, csv::OutputFormat, genpass::GenPassOpts,
-};
+// 重新导出子模块的公共类型，提供统一接口
+pub use base64::{Base64DecodeOpts, Base64EncodeOpts, Base64Format, Base64SubCommand};
 use clap::Parser;
+pub use csv::{CsvOpts, OutputFormat};
+pub use genpass::GenPassOpts;
+pub use text::TextSubCommand;
 
 #[derive(Debug, Parser)]
 #[clap(
@@ -31,6 +33,8 @@ pub enum SubCommand {
     GenPass(GenPassOpts),
     #[command(subcommand)]
     Base64(Base64SubCommand),
+    #[command(subcommand)]
+    Text(TextSubCommand),
 }
 
 pub fn verify_input_file(filename: &str) -> Result<String, String> {

@@ -1,4 +1,4 @@
-use crate::cli::GenPassOpts;
+use crate::GenPassOpts;
 use rand::seq::{IndexedRandom, SliceRandom};
 use std::iter;
 use zxcvbn::zxcvbn;
