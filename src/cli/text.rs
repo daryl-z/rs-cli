@@ -1,4 +1,4 @@
-use super::verify_input_file;
+use super::verify_file;
 use clap::Parser;
 use std::{fmt, str::FromStr};
 
@@ -19,9 +19,9 @@ pub enum TextSignFormat {
 #[derive(Debug, Parser)]
 pub struct TextSignOpts {
     // default_value = "-" 表示从stdin读取
-    #[arg(short, long, value_parser = verify_input_file, default_value = "-")]
+    #[arg(short, long, value_parser = verify_file, default_value = "-")]
     pub input: String,
-    #[arg(short, long, value_parser = verify_input_file, default_value = "-")]
+    #[arg(short, long, value_parser = verify_file)]
     pub key: String,
     #[arg(long, default_value = "blake3")]
     pub format: TextSignFormat,
@@ -29,9 +29,9 @@ pub struct TextSignOpts {
 
 #[derive(Debug, Parser)]
 pub struct TextVerifyOpts {
-    #[arg(short, long, value_parser = verify_input_file, default_value = "-")]
+    #[arg(short, long, value_parser = verify_file, default_value = "-")]
     pub input: String,
-    #[arg(short, long, value_parser = verify_input_file, default_value = "-")]
+    #[arg(short, long, value_parser = verify_file)]
     pub key: String,
     #[arg(short, long)]
     pub sig: String,

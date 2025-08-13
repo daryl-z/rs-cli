@@ -37,7 +37,7 @@ pub enum SubCommand {
     Text(TextSubCommand),
 }
 
-pub fn verify_input_file(filename: &str) -> Result<String, String> {
+pub fn verify_file(filename: &str) -> Result<String, String> {
     if filename == "-" || Path::new(filename).exists() {
         Ok(filename.into())
     } else {
@@ -50,10 +50,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_verify_input_file() {
-        assert_eq!(verify_input_file("-"), Ok("-".into()));
+    fn test_verify_file() {
+        assert_eq!(verify_file("-"), Ok("-".into()));
         assert_eq!(
-            verify_input_file("nonexistent"),
+            verify_file("nonexistent"),
             Err("文件 'nonexistent' 不存在".into())
         );
     }
