@@ -2,13 +2,12 @@ use crate::{Base64DecodeOpts, Base64EncodeOpts, Base64Format};
 use anyhow::Context;
 use base64::prelude::*;
 use std::{
-    fs, // 使用 fs::read 更简洁
+    fs,
     io::{self, IsTerminal, Read, Write},
 };
 
 pub fn process_encode(opts: &Base64EncodeOpts) -> anyhow::Result<()> {
     let data = if opts.input == "-" {
-        // --- 核心改动在这里 ---
         let mut buf = Vec::new();
         if io::stdin().is_terminal() {
             // 模式一：交互式终端
@@ -23,7 +22,6 @@ pub fn process_encode(opts: &Base64EncodeOpts) -> anyhow::Result<()> {
         }
         buf
     } else {
-        // 文件输入模式保持不变，但可以使用更简洁的 fs::read
         fs::read(&opts.input).with_context(|| format!("无法读取文件 '{}'", opts.input))?
     };
 
@@ -43,7 +41,6 @@ pub fn process_encode(opts: &Base64EncodeOpts) -> anyhow::Result<()> {
 
 pub fn process_decode(opts: &Base64DecodeOpts) -> anyhow::Result<()> {
     let data = if opts.input == "-" {
-        // --- 核心改动在这里 ---
         let mut buf = String::new();
         if io::stdin().is_terminal() {
             // 模式一：交互式终端
@@ -70,7 +67,15 @@ pub fn process_decode(opts: &Base64DecodeOpts) -> anyhow::Result<()> {
     }
     .context("Base64 解码失败，请检查输入格式是否正确")?;
 
-    io::stdout().write_all(&decoded)?;
+    match String::from_utf8(decoded.clone()) {
+        Ok(text) => {
+            println!("{}", text);
+            io::stdout().flush()?;
+        }
+        Err(_) => {
+            io::stdout().write_all(&decoded)?;
+        }
+    }
 
     Ok(())
 }
