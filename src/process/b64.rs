@@ -4,6 +4,9 @@ use base64::prelude::*;
 use std::io::{self, Write};
 
 pub fn process_encode(opts: &Base64EncodeOpts) -> anyhow::Result<()> {
+    if opts.input == "-" {
+        eprintln!("请输入要编码的内容，按 Ctrl+D (Unix/Mac) 或 Ctrl+Z (Windows) 结束输入：");
+    }
     let data =
         get_input_bytes(&opts.input).with_context(|| format!("无法读取输入源 '{}'", opts.input))?;
 
@@ -22,6 +25,9 @@ pub fn process_encode(opts: &Base64EncodeOpts) -> anyhow::Result<()> {
 }
 
 pub fn process_decode(opts: &Base64DecodeOpts) -> anyhow::Result<()> {
+    if opts.input == "-" {
+        eprintln!("请输入要编码的内容，按 Ctrl+D (Unix/Mac) 或 Ctrl+Z (Windows) 结束输入：");
+    }
     let data = get_input_string(&opts.input)
         .with_context(|| format!("无法读取输入源 '{}'", opts.input))?;
 
