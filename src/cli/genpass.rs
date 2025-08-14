@@ -13,3 +13,15 @@ pub struct GenPassOpts {
     #[arg(long, default_value_t = true, action = clap::ArgAction::Set, value_parser = clap::value_parser!(bool))]
     pub symbols: bool,
 }
+
+impl GenPassOpts {
+    pub fn get_default_opts() -> Self {
+        Self {
+            length: 12,
+            uppercase: true,
+            lowercase: true,
+            numbers: true,
+            symbols: true,
+        }
+    }
+}

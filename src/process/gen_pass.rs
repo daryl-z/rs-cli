@@ -1,14 +1,13 @@
 use crate::GenPassOpts;
 use rand::seq::{IndexedRandom, SliceRandom};
 use std::iter;
-use zxcvbn::zxcvbn;
 
 const LOWERCASE: &[u8] = b"abcdefghijklmnopqrstuvwxyz";
 const UPPERCASE: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const NUMBERS: &[u8] = b"0123456789";
 const SYMBOLS: &[u8] = b"!@#$%^&*().<>?_+-=/";
 
-pub fn process_genpass(opts: &GenPassOpts) -> anyhow::Result<()> {
+pub fn process_genpass(opts: &GenPassOpts) -> anyhow::Result<String> {
     let mut rng = rand::rng();
 
     let char_sets = [
@@ -26,7 +25,7 @@ pub fn process_genpass(opts: &GenPassOpts) -> anyhow::Result<()> {
     // 3. 在所有操作开始前，首先处理边界情况
     if enabled_sets.is_empty() {
         eprintln!("错误：请至少选择一个字符集！");
-        return Ok(());
+        return Ok(String::new());
     }
 
     // 4. 函数式地生成“保证存在的字符”
@@ -48,9 +47,5 @@ pub fn process_genpass(opts: &GenPassOpts) -> anyhow::Result<()> {
 
     password.shuffle(&mut rng);
     let final_password = String::from_utf8(password)?;
-    println!("{}", final_password);
-    let score = zxcvbn(&final_password, &[]).score();
-    eprintln!("密码强度评分：{}/5", score);
-
-    Ok(())
+    Ok(final_password)
 }

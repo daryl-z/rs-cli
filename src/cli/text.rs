@@ -1,6 +1,6 @@
-use super::verify_file;
+use super::{verify_file, verify_path};
 use clap::Parser;
-use std::{fmt, str::FromStr};
+use std::{fmt, path::PathBuf, str::FromStr};
 
 #[derive(Debug, Parser)]
 pub enum TextSubCommand {
@@ -8,6 +8,8 @@ pub enum TextSubCommand {
     Sign(TextSignOpts),
     #[command(about = "Verify a text file")]
     Verify(TextVerifyOpts),
+    #[command(about = "Generate a new key")]
+    Generate(TextKeyGenerateOpts),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -33,8 +35,18 @@ pub struct TextVerifyOpts {
     pub input: String,
     #[arg(short, long, value_parser = verify_file)]
     pub key: String,
-    #[arg(short, long)]
+    #[arg(long)]
     pub sig: String,
+    #[arg(long, default_value = "blake3")]
+    pub format: TextSignFormat,
+}
+
+#[derive(Debug, Parser)]
+pub struct TextKeyGenerateOpts {
+    #[arg(short, long, default_value = "blake3", value_parser = parse_format)]
+    pub format: TextSignFormat,
+    #[arg(short, long, value_parser = verify_path)]
+    pub output: PathBuf,
 }
 
 impl fmt::Display for TextSignFormat {
@@ -62,4 +74,8 @@ impl FromStr for TextSignFormat {
             _ => Err(anyhow::anyhow!("Invalid format")),
         }
     }
+}
+
+fn parse_format(format: &str) -> Result<TextSignFormat, anyhow::Error> {
+    format.parse()
 }

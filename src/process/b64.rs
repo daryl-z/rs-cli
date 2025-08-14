@@ -3,7 +3,7 @@ use anyhow::Context;
 use base64::prelude::*;
 use std::io::{self, Write};
 
-pub fn process_encode(opts: &Base64EncodeOpts) -> anyhow::Result<()> {
+pub fn process_encode(opts: &Base64EncodeOpts) -> anyhow::Result<String> {
     if opts.input == "-" {
         eprintln!("请输入要编码的内容，按 Ctrl+D (Unix/Mac) 或 Ctrl+Z (Windows) 结束输入：");
     }
@@ -12,7 +12,7 @@ pub fn process_encode(opts: &Base64EncodeOpts) -> anyhow::Result<()> {
 
     if data.is_empty() {
         eprintln!("警告：输入内容为空，没有数据需要编码。");
-        return Ok(());
+        return Ok(String::new());
     }
 
     let encoded = match opts.format {
@@ -21,10 +21,10 @@ pub fn process_encode(opts: &Base64EncodeOpts) -> anyhow::Result<()> {
     };
 
     println!("{}", encoded);
-    Ok(())
+    Ok(encoded)
 }
 
-pub fn process_decode(opts: &Base64DecodeOpts) -> anyhow::Result<()> {
+pub fn process_decode(opts: &Base64DecodeOpts) -> anyhow::Result<Vec<u8>> {
     if opts.input == "-" {
         eprintln!("请输入要编码的内容，按 Ctrl+D (Unix/Mac) 或 Ctrl+Z (Windows) 结束输入：");
     }
@@ -34,7 +34,7 @@ pub fn process_decode(opts: &Base64DecodeOpts) -> anyhow::Result<()> {
     let trimmed_data = data.trim();
     if trimmed_data.is_empty() {
         eprintln!("警告：输入内容为空，没有数据需要解码。");
-        return Ok(());
+        return Ok(Vec::new());
     }
 
     let decoded = match opts.format {
@@ -54,5 +54,5 @@ pub fn process_decode(opts: &Base64DecodeOpts) -> anyhow::Result<()> {
         }
     }
 
-    Ok(())
+    Ok(decoded)
 }

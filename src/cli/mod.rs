@@ -3,14 +3,14 @@ mod csv;
 mod genpass;
 mod text;
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 // 重新导出子模块的公共类型，提供统一接口
 pub use base64::{Base64DecodeOpts, Base64EncodeOpts, Base64Format, Base64SubCommand};
 use clap::Parser;
 pub use csv::{CsvOpts, OutputFormat};
 pub use genpass::GenPassOpts;
-pub use text::TextSubCommand;
+pub use text::{TextSignFormat, TextSignOpts, TextSubCommand, TextVerifyOpts};
 
 #[derive(Debug, Parser)]
 #[clap(
@@ -42,6 +42,15 @@ pub fn verify_file(filename: &str) -> Result<String, String> {
         Ok(filename.into())
     } else {
         Err(format!("文件 '{}' 不存在", filename))
+    }
+}
+
+fn verify_path(path: &str) -> Result<PathBuf, &'static str> {
+    let p = Path::new(path);
+    if p.exists() && p.is_dir() {
+        Ok(path.into())
+    } else {
+        Err("Path does not exist or is not a directory")
     }
 }
 
