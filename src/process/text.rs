@@ -2,7 +2,7 @@ use crate::cli::{GenPassOpts, TextSignFormat, TextSignOpts, TextVerifyOpts};
 use crate::process_genpass;
 use crate::utils::get_reader;
 
-// use rand::rand_core::OsRng;
+use rand::RngCore;
 
 use anyhow::Result;
 use base64::prelude::*;
@@ -62,13 +62,16 @@ impl KeyGenerator for Blake3 {
 impl KeyGenerator for Ed25519Signer {
     fn generate() -> Result<Vec<Vec<u8>>> {
         // rand` 0.9 uses `rand_core` 0.9
-        // - `ed25519-dalek` 2.2.0 requires `rand_core` 0.6
-        // let mut csprng = OsRng;
-        // let sk: SigningKey = SigningKey::generate(&mut csprng);
-        // let pk = sk.verifying_key().to_bytes().to_vec();
-        // let sk = sk.to_bytes().to_vec();
+        // ed25519-dalek 3.0.0-pre.0 is compatible with rand_core 0.9
+        // Generate 32 random bytes for the private key
+        let mut private_key_bytes = [0u8; 32];
+        rand::rng().fill_bytes(&mut private_key_bytes);
 
-        Ok(vec![])
+        let sk = SigningKey::from_bytes(&private_key_bytes);
+        let pk = sk.verifying_key().to_bytes().to_vec();
+        let sk = sk.to_bytes().to_vec();
+
+        Ok(vec![sk, pk])
     }
 }
 
@@ -195,11 +198,11 @@ pub fn process_text_verify(opts: &TextVerifyOpts) -> Result<()> {
     let verified = match &opts.format {
         TextSignFormat::Blake3 => {
             let verifier = Blake3::load(&opts.key)?;
-            verifier.verify(&mut reader, &sig)?
+            verifier.verify(&buf[..], &sig)?
         }
         TextSignFormat::Ed25519 => {
             let verifier = Ed25519Verifier::load(&opts.key)?;
-            verifier.verify(&mut reader, &sig)?
+            verifier.verify(&buf[..], &sig)?
         }
     };
     println!("{}", verified);
