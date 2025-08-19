@@ -3,12 +3,13 @@ name = "rs-cli"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-authors = ["Edo <3zangelks@gmail.com>"]
+authors = ["Daryl <3zangelks@gmail.com>"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 anyhow = "1.0"
+axum = { version = "0.8.4", features = ["http2", "query", "tracing"] }
 base64 = "0.22.1"
 blake3 = "1.8.2"
 clap = { version = "4.5.43", features = ["derive"] }
@@ -19,7 +20,10 @@ rand = "0.9.2"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.142"
 serde_yaml = "0.9.34"
+tokio = { version = "1.47.1", features = ["rt", "rt-multi-thread", "macros", "net", "fs"] }
 toml = "0.9.5"
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 zxcvbn = "3.1.0"
 
 [dev-dependencies]
