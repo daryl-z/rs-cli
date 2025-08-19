@@ -50,9 +50,9 @@ fn main() -> anyhow::Result<()> {
                     }
                     TextSignFormat::Ed25519 => {
                         eprintln!("Ed25519 key generated successfully");
-                        // let name = &opts.output;
-                        // fs::write(name.join("ed25519.sk"), &key[0])?;
-                        // fs::write(name.join("ed25519.pk"), &key[1])?;
+                        let name = &opts.output;
+                        fs::write(name.join("ed25519.sk"), &key[0])?;
+                        fs::write(name.join("ed25519.pk"), &key[1])?;
                     }
                 }
             }
