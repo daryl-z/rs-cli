@@ -4,6 +4,7 @@ mod genpass;
 mod http;
 mod text;
 
+use enum_dispatch::enum_dispatch;
 use std::path::{Path, PathBuf};
 
 // 重新导出子模块的公共类型，提供统一接口
@@ -12,7 +13,7 @@ use clap::Parser;
 pub use csv::{CsvOpts, OutputFormat};
 pub use genpass::GenPassOpts;
 pub use http::{HttpServeOpts, HttpSubCommand};
-pub use text::{TextSignFormat, TextSignOpts, TextSubCommand, TextVerifyOpts};
+pub use text::{TextKeyGenerateOpts, TextSignFormat, TextSignOpts, TextSubCommand, TextVerifyOpts};
 
 #[derive(Debug, Parser)]
 #[clap(
@@ -28,16 +29,17 @@ pub struct Opts {
 }
 
 #[derive(Debug, Parser)]
+#[enum_dispatch(CmdExecutor)]
 pub enum SubCommand {
-    #[command(name = "csv", about = "Convert CSV to other formats")]
+    #[command(name = "csv", about = "Show CSV, or convert CSV to other formats")]
     Csv(CsvOpts),
     #[command(name = "genpass", about = "Generate a random password")]
     GenPass(GenPassOpts),
-    #[command(subcommand, about = "Base64 Encoding/Decoding")]
+    #[command(subcommand, about = "Base64 encode/decode")]
     Base64(Base64SubCommand),
-    #[command(subcommand, about = "Text Processing")]
+    #[command(subcommand, about = "Text sign/verify")]
     Text(TextSubCommand),
-    #[command(subcommand, about = "HTTP Server")]
+    #[command(subcommand, about = "HTTP server")]
     Http(HttpSubCommand),
 }
 
