@@ -22,7 +22,7 @@ fn resolve_secret(secret: &Option<String>) -> Result<Vec<u8>> {
     if let Some(ref value) = secret {
         ensure!(!value.is_empty(), "Secret cannot be empty");
         ensure!(
-            value.as_bytes().len() >= MIN_SECRET_LEN,
+            value.len() >= MIN_SECRET_LEN,
             "Secret must be at least {} bytes for HS256",
             MIN_SECRET_LEN
         );
@@ -33,7 +33,7 @@ fn resolve_secret(secret: &Option<String>) -> Result<Vec<u8>> {
         .context("HS256 secret missing; supply --secret or set JWT_SECRET env var")?;
     ensure!(!env_secret.is_empty(), "JWT_SECRET cannot be empty");
     ensure!(
-        env_secret.as_bytes().len() >= MIN_SECRET_LEN,
+        env_secret.len() >= MIN_SECRET_LEN,
         "JWT_SECRET must be at least {} bytes for HS256",
         MIN_SECRET_LEN
     );
