@@ -11,7 +11,7 @@ use enum_dispatch::enum_dispatch;
 
 pub use crate::process::{
     process_csv, process_decode, process_encode, process_genpass, process_http_serve,
-    process_text_generate, process_text_sign, process_text_verify,
+    process_text_key_generate, process_text_sign, process_text_verify,
 };
 pub use crate::utils::{get_input_bytes, get_input_string, get_reader};
 
