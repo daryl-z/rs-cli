@@ -19,12 +19,14 @@
 | `rst text sign --input <file|-> --key <keyfile> [--format blake3|ed25519]` | Produce a signature in URL-safe Base64 for text payloads using Blake3 MAC or Ed25519. | 使用 Blake3 MAC 或 Ed25519 为文本生成签名，并以 URL 安全 Base64 输出。 |
 | `rst text verify --input <file|-> --key <keyfile> --sig <base64>` | Validate a signature and print `true`/`false`. | 校验签名并输出 `true`/`false`。 |
 | `rst text generate --format blake3|ed25519 --output <dir>` | Create Blake3 secret keys or Ed25519 key pairs in the target directory. | 在目标目录生成 Blake3 密钥或 Ed25519 密钥对。 |
+| `rst text encrypt --input <file|-> --key <secret> [--text <plaintext>]` | Encrypt input using ChaCha20-Poly1305, prepend a random nonce, and emit base64 without padding. | 使用 ChaCha20-Poly1305 加密输入，随机生成 nonce，并输出无填充的 Base64。 |
+| `rst text decrypt --input <file|-> --key <secret> [--cipher <base64>]` | Decode base64, recover the nonce, and decrypt the payload back to UTF-8 text. | 解码 Base64，提取 nonce，并解密为 UTF-8 文本。 |
 | `rst http serve [--dir <path>] [--port <u16>]` | Host static files from a directory via Axum on the given port (default 8080). | 基于 Axum 在指定端口（默认 8080）托管某目录下的静态文件。 |
 | `rst jwt sign --sub <subject> --aud <audience> [--exp 14d] [--secret <secret>]` | Issue an HS256 token with the provided subject, audience, and TTL (default 14 days). Provide the signing key via --secret or the JWT_SECRET env var. | 基于 HS256 签发带有主体、受众及有效期（默认 14 天）的 JWT，密钥可通过 --secret 或 JWT_SECRET 环境变量提供。 |
 | `rst jwt verify --token <jwt> --aud <audience> [--secret <secret>]` | Validate an HS256 token using the shared secret (flag or JWT_SECRET env) and enforce the expected audience. | 校验使用共享密钥签名的 HS256 JWT，并在提供的受众匹配时返回结果；密钥可来自 --secret 或 JWT_SECRET 环境变量。 |
 
 > Tip 提示：Use `-` for `--input` or `--key` to read from stdin in both the Base64 and Text flows. / 在 Base64 与文本子命令中，`--input` 或 `--key` 传入 `-` 可从标准输入读取。
-> Note 提示：Set `JWT_SECRET` or pass `--secret` when running JWT subcommands to provide the HS256 key. / 运行 JWT 子命令时请通过 `JWT_SECRET` 环境变量或 `--secret` 参数提供 HS256 密钥。
+> Note 提示：Set `JWT_SECRET` or pass `--secret` when running JWT subcommands to provide the HS256 key；text encryption emits nonce+ciphertext as Base64（记得保存输出以便解密，或使用 `--cipher`/`--text` 直接传值）。 / 运行 JWT 子命令时请通过 `JWT_SECRET` 环境变量或 `--secret` 参数提供 HS256 密钥；文本加密会输出包含 nonce 的 Base64，可通过 `--cipher`/`--text` 直接传值，请妥善保存以便解密。
 
 ## Dependency Highlights / 依赖说明
 | Crate | English Purpose | 中文用途 |
@@ -35,6 +37,7 @@
 | `serde`, `serde_json`, `serde_yaml`, `toml` | Serialize structured CSV data into multiple formats. | 将结构化 CSV 数据序列化为多种格式。 |
 | `csv` | Parse delimited files while preserving headers. | 解析带表头的分隔文本文件。 |
 | `base64`, `blake3`, `ed25519-dalek`, `rand`, `zxcvbn` | Power cryptographic utilities, entropy generation, and password scoring. | 支撑加密工具、随机数生成与密码强度评分。 |
+| `chacha20poly1305` | AEAD (ChaCha20-Poly1305) encryption/decryption for text subcommands. | 为文本子命令提供 ChaCha20-Poly1305 AEAD 加/解密能力。 |
 | `jsonwebtoken` | HS256 JWT signing and verification helpers. | 提供 HS256 JWT 的签名与验证功能。 |
 | `anyhow`, `tracing`, `tracing-subscriber` | Provide ergonomic error handling and structured logging. | 提供简洁的错误处理与结构化日志。 |
 | `tempfile` (dev) | Support isolated filesystem tests. | 为文件系统相关测试提供隔离环境。 |

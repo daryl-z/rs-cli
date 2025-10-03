@@ -3,7 +3,9 @@ use crate::process_genpass;
 
 use rand::RngCore;
 
-use anyhow::Result;
+use anyhow::{ensure, Result};
+use chacha20poly1305::aead::{Aead, KeyInit};
+use chacha20poly1305::{ChaCha20Poly1305, Key, Nonce};
 use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
 use std::{collections::HashMap, io::Read};
 #[cfg(test)]
@@ -52,18 +54,30 @@ struct Ed25519Signer {
 }
 
 impl Ed25519Signer {
-    pub fn new(key: SigningKey) -> Self {
-        Self { key }
+    // pub fn new(key: SigningKey) -> Self {
+    //     Self { key }
+    // }
+
+    // pub fn try_new(key: &[u8]) -> Result<Self> {
+    //     // Take only the first 32 bytes, ignoring any trailing characters (like newlines)
+    //     let key_bytes = key
+    //         .get(..32)
+    //         .ok_or_else(|| anyhow::anyhow!("Key must be at least 32 bytes"))?;
+    //     let key = SigningKey::from_bytes(key_bytes.try_into()?);
+    //     let signer = Ed25519Signer::new(key);
+    //     Ok(signer)
+    // }
+
+    pub fn try_new(key: impl AsRef<[u8]>) -> Result<Self> {
+        let key = key.as_ref();
+        ensure!(key.len() >= 32, "Key must be at least 32 bytes");
+        let key = (&key[..32]).try_into()?;
+        Ok(Self::new(key))
     }
 
-    pub fn try_new(key: &[u8]) -> Result<Self> {
-        // Take only the first 32 bytes, ignoring any trailing characters (like newlines)
-        let key_bytes = key
-            .get(..32)
-            .ok_or_else(|| anyhow::anyhow!("Key must be at least 32 bytes"))?;
-        let key = SigningKey::from_bytes(key_bytes.try_into()?);
-        let signer = Ed25519Signer::new(key);
-        Ok(signer)
+    pub fn new(key: &[u8; 32]) -> Self {
+        let key = SigningKey::from_bytes(key);
+        Self { key }
     }
 
     #[cfg(test)]
@@ -78,18 +92,26 @@ struct Ed25519Verifier {
 }
 
 impl Ed25519Verifier {
-    pub fn new(key: VerifyingKey) -> Self {
-        Self { key }
-    }
+    // pub fn new(key: VerifyingKey) -> Self {
+    //     Self { key }
+    // }
 
-    pub fn try_new(key: &[u8]) -> Result<Self> {
-        // Take only the first 32 bytes, ignoring any trailing characters (like newlines)
-        let key_bytes = key
-            .get(..32)
-            .ok_or_else(|| anyhow::anyhow!("Key must be at least 32 bytes"))?;
-        let key = VerifyingKey::from_bytes(key_bytes.try_into()?)?;
-        let verifier = Ed25519Verifier::new(key);
-        Ok(verifier)
+    // pub fn try_new(key: &[u8]) -> Result<Self> {
+    //     // Take only the first 32 bytes, ignoring any trailing characters (like newlines)
+    //     let key_bytes = key
+    //         .get(..32)
+    //         .ok_or_else(|| anyhow::anyhow!("Key must be at least 32 bytes"))?;
+    //     let key = VerifyingKey::from_bytes(key_bytes.try_into()?)?;
+    //     let verifier = Ed25519Verifier::new(key);
+    //     Ok(verifier)
+    // }
+
+    pub fn try_new(key: impl AsRef<[u8]>) -> Result<Self> {
+        let key = key.as_ref();
+        ensure!(key.len() >= 32, "Key must be at least 32 bytes");
+        let key = (&key[..32]).try_into()?;
+        let key = VerifyingKey::from_bytes(key)?;
+        Ok(Self { key })
     }
 
     #[cfg(test)]
@@ -108,11 +130,18 @@ impl Blake3 {
     pub fn new(key: [u8; 32]) -> Self {
         Blake3 { key }
     }
-    pub fn try_new(key: &[u8]) -> Result<Self> {
-        let key = &key[..32];
-        let key = key.try_into()?;
-        let signer = Blake3::new(key);
-        Ok(signer)
+    // pub fn try_new(key: &[u8]) -> Result<Self> {
+    //     let key = &key[..32];
+    //     let key = key.try_into()?;
+    //     let signer = Blake3::new(key);
+    //     Ok(signer)
+    // }
+    // impl AsRef<[u8]>，因此既可以直接传切片，也可以传 Vec<u8>、数组引用等任何能借用为 &[u8] 的类型，调用更灵活
+    pub fn try_new(key: impl AsRef<[u8]>) -> Result<Self> {
+        let key = key.as_ref();
+        ensure!(key.len() >= 32, "Key must be at least 32 bytes");
+        let key = (&key[..32]).try_into()?;
+        Ok(Self::new(key))
     }
 
     #[cfg(test)]
@@ -158,6 +187,56 @@ impl TextVerifier for Ed25519Verifier {
         let ret = self.key.verify(&buf, &sig).is_ok();
         Ok(ret)
     }
+}
+
+fn derive_chacha_key(key: &[u8]) -> [u8; 32] {
+    if key.len() == 32 {
+        let mut out = [0u8; 32];
+        out.copy_from_slice(key);
+        out
+    } else {
+        let hash = blake3::hash(key);
+        *hash.as_bytes()
+    }
+}
+
+// cargo run -- text encrypt --key "hello" --text "hello world"
+// cargo run -- text decrypt --key "hello" --cipher  ETzc+ijUW2Yb0Nvf0HzZthdDc+FoyY/+hWpvPXK/dsf90cIGwagQ
+
+fn build_cipher(key: &[u8]) -> Result<ChaCha20Poly1305> {
+    let key = derive_chacha_key(key);
+    Ok(ChaCha20Poly1305::new(Key::from_slice(&key)))
+}
+
+pub fn process_text_encrypt(reader: &mut dyn Read, key: &[u8]) -> Result<Vec<u8>> {
+    let cipher = build_cipher(key)?;
+    let mut plaintext = Vec::new();
+    reader.read_to_end(&mut plaintext)?;
+
+    let mut nonce = [0u8; 12];
+    rand::rng().fill_bytes(&mut nonce);
+
+    let ciphertext = cipher
+        .encrypt(Nonce::from_slice(&nonce), plaintext.as_ref())
+        .map_err(|e| anyhow::anyhow!("Encryption failed: {e}"))?;
+
+    let mut output = Vec::with_capacity(nonce.len() + ciphertext.len());
+    output.extend_from_slice(&nonce);
+    output.extend_from_slice(&ciphertext);
+    Ok(output)
+}
+
+pub fn process_text_decrypt(data: &[u8], key: &[u8]) -> Result<Vec<u8>> {
+    ensure!(
+        data.len() >= 12,
+        "Ciphertext too short; expected nonce + payload"
+    );
+    let (nonce_bytes, cipher_bytes) = data.split_at(12);
+    let cipher = build_cipher(key)?;
+    let plaintext = cipher
+        .decrypt(Nonce::from_slice(nonce_bytes), cipher_bytes)
+        .map_err(|e| anyhow::anyhow!("Decryption failed: {e}"))?;
+    Ok(plaintext)
 }
 
 pub fn process_text_sign(
@@ -303,5 +382,25 @@ mod tests {
         let sig = blake3.sign(&mut &data[..])?;
         assert!(blake3.verify(&mut &data[..], &sig)?);
         Ok(())
+    }
+
+    #[test]
+    fn test_chacha_encrypt_decrypt_roundtrip() -> Result<()> {
+        let key = b"some passphrase";
+        let mut reader = &b"secret message"[..];
+        let ciphertext = process_text_encrypt(&mut reader, key)?;
+        assert!(ciphertext.len() > 12);
+        let plaintext = process_text_decrypt(&ciphertext, key)?;
+        assert_eq!(plaintext, b"secret message");
+        Ok(())
+    }
+
+    #[test]
+    fn test_chacha_decrypt_wrong_key() {
+        let key = b"correct key";
+        let mut reader = &b"payload"[..];
+        let ciphertext = process_text_encrypt(&mut reader, key).expect("encrypt");
+        let result = process_text_decrypt(&ciphertext, b"wrong key");
+        assert!(result.is_err());
     }
 }

@@ -1,13 +1,21 @@
 use super::{verify_file, verify_path};
 use crate::{
-    get_input_bytes, get_reader, process_text_key_generate, process_text_sign, process_text_verify,
-    CmdExecutor,
+    get_input_bytes, get_reader, process_text_decrypt, process_text_encrypt,
+    process_text_key_generate, process_text_sign, process_text_verify, CmdExecutor,
 };
 use anyhow::{ensure, Context};
-use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
+use base64::{
+    engine::general_purpose::{STANDARD_NO_PAD, URL_SAFE_NO_PAD},
+    Engine,
+};
 use clap::Parser;
 use enum_dispatch::enum_dispatch;
-use std::{fmt, path::PathBuf, str::FromStr};
+use std::{
+    fmt,
+    io::{Cursor, Read},
+    path::PathBuf,
+    str::FromStr,
+};
 use tokio::fs;
 
 #[derive(Debug, Parser)]
@@ -19,6 +27,10 @@ pub enum TextSubCommand {
     Verify(TextVerifyOpts),
     #[command(about = "Generate a new key")]
     Generate(TextKeyGenerateOpts),
+    #[command(about = "Encrypt input with ChaCha20-Poly1305")]
+    Encrypt(TextEncryptOpts),
+    #[command(about = "Decrypt input with ChaCha20-Poly1305")]
+    Decrypt(TextDecryptOpts),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -56,6 +68,36 @@ pub struct TextKeyGenerateOpts {
     pub format: TextSignFormat,
     #[arg(short, long, value_parser = verify_path)]
     pub output: PathBuf,
+}
+// cargo run -- text encrypt --key "hello" --text "hello world"
+// cargo run -- text decrypt --key "hello" --cipher  ETzc+ijUW2Yb0Nvf0HzZthdDc+FoyY/+hWpvPXK/dsf90cIGwagQ
+
+#[derive(Debug, Parser)]
+pub struct TextEncryptOpts {
+    #[arg(short, long, value_parser = verify_file, default_value = "-")]
+    pub input: String,
+    #[arg(
+        short = 'k',
+        long,
+        help = "Symmetric key material (will be stretched to 32 bytes)"
+    )]
+    pub key: String,
+    #[arg(long, help = "Plaintext to encrypt (overrides --input)")]
+    pub text: Option<String>,
+}
+
+#[derive(Debug, Parser)]
+pub struct TextDecryptOpts {
+    #[arg(short, long, value_parser = verify_file, default_value = "-")]
+    pub input: String,
+    #[arg(
+        short = 'k',
+        long,
+        help = "Symmetric key material (must match encryption)"
+    )]
+    pub key: String,
+    #[arg(long, help = "Ciphertext in Base64 (overrides --input)")]
+    pub cipher: Option<String>,
 }
 
 impl fmt::Display for TextSignFormat {
@@ -138,6 +180,53 @@ impl CmdExecutor for TextKeyGenerateOpts {
                 )
                 .await?;
                 eprintln!("Ed25519 key pair generated successfully");
+            }
+        }
+        Ok(())
+    }
+}
+
+impl CmdExecutor for TextEncryptOpts {
+    async fn execute(self) -> anyhow::Result<()> {
+        let mut reader: Box<dyn Read> = if let Some(text) = self.text {
+            Box::new(Cursor::new(text.into_bytes()))
+        } else {
+            if self.input == "-" {
+                eprintln!(
+                    "请输入待加密的内容，结束后按 Ctrl+D (macOS/Linux) 或 Ctrl+Z (Windows) 提交。"
+                );
+            }
+            get_reader(&self.input)?
+        };
+        let ciphertext = process_text_encrypt(&mut *reader, self.key.as_bytes())?;
+        let encoded = STANDARD_NO_PAD.encode(ciphertext);
+        println!("{}", encoded);
+        Ok(())
+    }
+}
+
+impl CmdExecutor for TextDecryptOpts {
+    async fn execute(self) -> anyhow::Result<()> {
+        let data = if let Some(cipher) = self.cipher {
+            cipher
+        } else {
+            if self.input == "-" {
+                eprintln!("请输入 Base64 编码的密文，结束后按 Ctrl+D (macOS/Linux) 或 Ctrl+Z (Windows) 提交。");
+            }
+            let mut reader = get_reader(&self.input)?;
+            let mut data = String::new();
+            reader.read_to_string(&mut data)?;
+            data
+        };
+        let data = data.trim();
+        let decoded = STANDARD_NO_PAD.decode(data)?;
+        let plaintext = process_text_decrypt(&decoded, self.key.as_bytes())?;
+        use std::io::Write;
+        match String::from_utf8(plaintext.clone()) {
+            Ok(text) => println!("{}", text),
+            Err(_) => {
+                // 输出原始字节供用户自行处理
+                std::io::stdout().write_all(&plaintext)?;
             }
         }
         Ok(())

@@ -15,7 +15,10 @@ pub use csv::{CsvOpts, OutputFormat};
 pub use genpass::GenPassOpts;
 pub use http::{HttpServeOpts, HttpSubCommand};
 pub use jwt::{JwtSignOpts, JwtSubCommand, JwtVerifyOpts};
-pub use text::{TextKeyGenerateOpts, TextSignFormat, TextSignOpts, TextSubCommand, TextVerifyOpts};
+pub use text::{
+    TextDecryptOpts, TextEncryptOpts, TextKeyGenerateOpts, TextSignFormat, TextSignOpts,
+    TextSubCommand, TextVerifyOpts,
+};
 
 #[derive(Debug, Parser)]
 #[clap(
